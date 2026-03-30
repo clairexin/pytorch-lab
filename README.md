@@ -10,6 +10,9 @@ Fits a simple `y = 2x + 1` relationship using gradient descent. Demonstrates ten
 ### Logistic Regression
 Binary classification on a 2D dataset with two clusters. Uses a sigmoid activation and BCE loss to learn a decision boundary separating the classes.
 
+### Multi-Layer Perceptron (MLP)
+Classifies concentric circles — a non-linearly separable problem that a single-layer model can't solve. Uses a 2→16→8→1 network with ReLU hidden activations and sigmoid output, trained with Adam optimizer.
+
 ## Setup
 
 ```bash
@@ -23,4 +26,5 @@ pip install torch
 ```bash
 python linear_regression.py
 python logistic_regression.py
+python mlp.py
 ```
