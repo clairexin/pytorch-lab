@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyTorch Lab Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            padding: 24px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 32px;
+            color: #fff;
+        }
+        .section {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+            border: 1px solid #0f3460;
+        }
+        .section h2 {
+            font-size: 1.3rem;
+            margin-bottom: 16px;
+            color: #e94560;
+        }
+        .row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .chart-box {
+            flex: 1 1 0;
+            min-width: 300px;
+            background: #1a1a2e;
+            border-radius: 8px;
+            padding: 8px;
+        }
+        .chart-box .plot {
+            width: 100%;
+            height: 350px;
+        }
+        .info-box {
+            flex: 1 1 0;
+            min-width: 250px;
+            background: #1a1a2e;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            display: flex;
+            align-items: center;
+        }
+        .info-box .content { width: 100%; }
+        .info-box .label { color: #888; }
+        .info-box .value { color: #53d8fb; }
+        .loading { text-align: center; padding: 40px; color: #888; }
+        .error { text-align: center; padding: 40px; color: #e94560; }
+    </style>
+</head>
+<body>
+    <h1>PyTorch Lab Dashboard</h1>
+    <div id="linear-section" class="section">
+        <h2>1. Linear Regression</h2>
+        <div class="loading">Loading...</div>
+    </div>
+    <div id="logistic-section" class="section">
+        <h2>2. Logistic Regression</h2>
+        <div class="loading">Loading...</div>
+    </div>
+    <div id="mlp-section" class="section">
+        <h2>3. Multi-Layer Perceptron</h2>
+        <div class="loading">Loading...</div>
+    </div>
+
+    <script>
+    const plotBg = '#1a1a2e';
+    const gridColor = '#2a2a4e';
+    const fontColor = '#e0e0e0';
+
+    function makeLayout(title, opts) {
+        return {
+            title: { text: title, font: { size: 14 } },
+            paper_bgcolor: plotBg,
+            plot_bgcolor: plotBg,
+            font: { color: fontColor, size: 11 },
+            margin: { t: 40, r: opts.rightMargin || 20, b: 50, l: 50 },
+            xaxis: { gridcolor: gridColor, zerolinecolor: gridColor, title: opts.xtitle || '' },
+            yaxis: { gridcolor: gridColor, zerolinecolor: gridColor, title: opts.ytitle || '', ...(opts.yaxis || {}) },
+            ...(opts.extra || {}),
+        };
+    }
+
+    const plotConfig = { responsive: true, displaylogo: false };
+
+    async function loadJSON(path) {
+        const resp = await fetch(path);
+        if (!resp.ok) throw new Error(`Failed to load ${path}: ${resp.status}`);
+        return resp.json();
+    }
+
+    function showError(sectionId, heading, err) {
+        const section = document.getElementById(sectionId);
+        section.innerHTML = `<h2>${heading}</h2><div class="error">Error: ${err.message}</div>`;
+    }
+
+    // --- Linear Regression ---
+    async function renderLinear() {
+        try {
+            const d = await loadJSON('../data/linear_regression.json');
+            const section = document.getElementById('linear-section');
+            section.innerHTML = `<h2>1. Linear Regression</h2>
+                <div class="row">
+                    <div class="chart-box"><div class="plot" id="lr-scatter"></div></div>
+                    <div class="chart-box"><div class="plot" id="lr-loss"></div></div>
+                    <div class="info-box"><div class="content" id="lr-info"></div></div>
+                </div>`;
+
+            Plotly.newPlot('lr-scatter', [
+                { x: d.dataset.x, y: d.dataset.y, mode: 'markers', type: 'scatter',
+                  marker: { color: '#53d8fb', size: 5, opacity: 0.6 }, name: 'Data' },
+                { x: d.results.fit_line_x, y: d.results.fit_line_y, mode: 'lines', type: 'scatter',
+                  line: { color: '#e94560', width: 2 }, name: 'Fit' },
+            ], makeLayout('Data & Fitted Line', { xtitle: 'x', ytitle: 'y' }), plotConfig);
+
+            Plotly.newPlot('lr-loss', [
+                { x: d.training.epochs, y: d.training.losses, mode: 'lines', type: 'scatter',
+                  line: { color: '#e94560' } },
+            ], makeLayout('Training Loss (MSE)', { xtitle: 'Epoch', ytitle: 'Loss' }), plotConfig);
+
+            document.getElementById('lr-info').innerHTML =
+                `<span class="label">Learned weight:</span> <span class="value">${d.results.weight.toFixed(4)}</span><br>` +
+                `<span class="label">Learned bias:</span> <span class="value">${d.results.bias.toFixed(4)}</span><br>` +
+                `<span class="label">Expected:</span> w=2.0, b=1.0<br><br>` +
+                `<span class="label">Prediction x=5:</span> <span class="value">${d.predictions.y_pred.toFixed(4)}</span><br>` +
+                `<span class="label">Expected:</span> ~11.0<br><br>` +
+                `<span class="label">Final loss:</span> <span class="value">${d.training.losses[d.training.losses.length-1].toFixed(4)}</span>`;
+        } catch (err) {
+            showError('linear-section', '1. Linear Regression', err);
+        }
+    }
+
+    // --- Logistic Regression ---
+    async function renderLogistic() {
+        try {
+            const d = await loadJSON('../data/logistic_regression.json');
+            const section = document.getElementById('logistic-section');
+            section.innerHTML = `<h2>2. Logistic Regression</h2>
+                <div class="row">
+                    <div class="chart-box"><div class="plot" id="log-scatter"></div></div>
+                    <div class="chart-box"><div class="plot" id="log-heatmap"></div></div>
+                    <div class="chart-box"><div class="plot" id="log-curves"></div></div>
+                </div>`;
+
+            const c0x = [], c0y = [], c1x = [], c1y = [];
+            for (let i = 0; i < d.dataset.labels.length; i++) {
+                if (d.dataset.labels[i] === 0) { c0x.push(d.dataset.x1[i]); c0y.push(d.dataset.x2[i]); }
+                else { c1x.push(d.dataset.x1[i]); c1y.push(d.dataset.x2[i]); }
+            }
+
+            Plotly.newPlot('log-scatter', [
+                { x: c0x, y: c0y, mode: 'markers', type: 'scatter',
+                  marker: { color: '#53d8fb', size: 5, opacity: 0.7 }, name: 'Class 0' },
+                { x: c1x, y: c1y, mode: 'markers', type: 'scatter',
+                  marker: { color: '#e94560', size: 5, opacity: 0.7 }, name: 'Class 1' },
+                { x: d.decision_boundary.x1, y: d.decision_boundary.x2, mode: 'lines', type: 'scatter',
+                  line: { color: '#fff', width: 2, dash: 'dash' }, name: 'Boundary' },
+            ], makeLayout('Decision Boundary', {
+                xtitle: 'x1', ytitle: 'x2',
+                extra: { xaxis: { gridcolor: gridColor, zerolinecolor: gridColor, title: 'x1', range: [-3, 3] },
+                         yaxis: { gridcolor: gridColor, zerolinecolor: gridColor, title: 'x2', range: [-3, 3] } }
+            }), plotConfig);
+
+            Plotly.newPlot('log-heatmap', [
+                { z: d.decision_grid.probabilities, x: d.decision_grid.x_range, y: d.decision_grid.y_range,
+                  type: 'heatmap', colorscale: 'RdBu', reversescale: true, zmin: 0, zmax: 1,
+                  colorbar: { title: 'P(1)', len: 0.9 } },
+                { x: c0x, y: c0y, mode: 'markers', type: 'scatter',
+                  marker: { color: '#53d8fb', size: 4, line: { color: '#fff', width: 0.5 } }, showlegend: false },
+                { x: c1x, y: c1y, mode: 'markers', type: 'scatter',
+                  marker: { color: '#e94560', size: 4, line: { color: '#fff', width: 0.5 } }, showlegend: false },
+            ], makeLayout('Prediction Probabilities', { xtitle: 'x1', ytitle: 'x2', rightMargin: 80 }), plotConfig);
+
+            Plotly.newPlot('log-curves', [
+                { x: d.training.epochs, y: d.training.losses, mode: 'lines', name: 'Loss',
+                  line: { color: '#e94560' } },
+                { x: d.training.epochs, y: d.training.accuracies, mode: 'lines', name: 'Accuracy',
+                  line: { color: '#53d8fb' }, yaxis: 'y2' },
+            ], makeLayout('Training Curves', {
+                xtitle: 'Epoch', ytitle: 'Loss', rightMargin: 50,
+                extra: {
+                    yaxis2: { title: 'Accuracy', overlaying: 'y', side: 'right', gridcolor: gridColor,
+                              range: [0, 1.05], tickformat: '.0%', font: { color: fontColor } },
+                    legend: { x: 0.5, y: -0.25, orientation: 'h', xanchor: 'center' },
+                },
+            }), plotConfig);
+        } catch (err) {
+            showError('logistic-section', '2. Logistic Regression', err);
+        }
+    }
+
+    // --- MLP ---
+    async function renderMLP() {
+        try {
+            const d = await loadJSON('../data/mlp.json');
+            const section = document.getElementById('mlp-section');
+            section.innerHTML = `<h2>3. Multi-Layer Perceptron</h2>
+                <div class="row">
+                    <div class="chart-box"><div class="plot" id="mlp-heatmap"></div></div>
+                    <div class="chart-box"><div class="plot" id="mlp-curves"></div></div>
+                    <div class="info-box"><div class="content" id="mlp-info"></div></div>
+                </div>`;
+
+            const c0x = [], c0y = [], c1x = [], c1y = [];
+            for (let i = 0; i < d.dataset.labels.length; i++) {
+                if (d.dataset.labels[i] === 0) { c0x.push(d.dataset.x1[i]); c0y.push(d.dataset.x2[i]); }
+                else { c1x.push(d.dataset.x1[i]); c1y.push(d.dataset.x2[i]); }
+            }
+
+            Plotly.newPlot('mlp-heatmap', [
+                { z: d.decision_grid.probabilities, x: d.decision_grid.x_range, y: d.decision_grid.y_range,
+                  type: 'heatmap', colorscale: 'RdBu', reversescale: true, zmin: 0, zmax: 1,
+                  colorbar: { title: 'P(1)', len: 0.9 } },
+                { x: c0x, y: c0y, mode: 'markers', type: 'scatter', name: 'Inner (class 0)',
+                  marker: { color: '#53d8fb', size: 4, line: { color: '#fff', width: 0.5 } } },
+                { x: c1x, y: c1y, mode: 'markers', type: 'scatter', name: 'Outer (class 1)',
+                  marker: { color: '#e94560', size: 4, line: { color: '#fff', width: 0.5 } } },
+            ], makeLayout('Decision Regions', {
+                xtitle: 'x1', ytitle: 'x2', rightMargin: 80,
+                extra: { xaxis: { gridcolor: gridColor, zerolinecolor: gridColor, title: 'x1', scaleanchor: 'y' },
+                         yaxis: { gridcolor: gridColor, zerolinecolor: gridColor, title: 'x2' } }
+            }), plotConfig);
+
+            Plotly.newPlot('mlp-curves', [
+                { x: d.training.epochs, y: d.training.losses, mode: 'lines', name: 'Loss',
+                  line: { color: '#e94560' } },
+                { x: d.training.epochs, y: d.training.accuracies, mode: 'lines', name: 'Accuracy',
+                  line: { color: '#53d8fb' }, yaxis: 'y2' },
+            ], makeLayout('Training Curves', {
+                xtitle: 'Epoch', ytitle: 'Loss', rightMargin: 50,
+                extra: {
+                    yaxis2: { title: 'Accuracy', overlaying: 'y', side: 'right', gridcolor: gridColor,
+                              range: [0, 1.05], tickformat: '.0%', font: { color: fontColor } },
+                    legend: { x: 0.5, y: -0.25, orientation: 'h', xanchor: 'center' },
+                },
+            }), plotConfig);
+
+            let archHtml = `<span class="label">Architecture:</span> 2 &rarr; 16 &rarr; 8 &rarr; 1<br>` +
+                `<span class="label">Total params:</span> <span class="value">${d.architecture.total_params}</span><br><br>`;
+            d.architecture.layers.forEach(l => {
+                archHtml += `${l.name} <span class="value">(${l.params})</span><br>`;
+            });
+            archHtml += `<br><span class="label">Predictions:</span><br>`;
+            d.predictions.forEach(p => {
+                archHtml += `r=${p.radius.toFixed(1)} &rarr; p=${p.prob.toFixed(4)} &rarr; class ${p.label}<br>`;
+            });
+            document.getElementById('mlp-info').innerHTML = archHtml;
+        } catch (err) {
+            showError('mlp-section', '3. Multi-Layer Perceptron', err);
+        }
+    }
+
+    Promise.all([renderLinear(), renderLogistic(), renderMLP()]);
+    </script>
+</body>
+</html>

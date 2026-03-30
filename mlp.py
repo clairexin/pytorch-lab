@@ -1,3 +1,5 @@
+import json
+import os
 import torch
 import torch.nn as nn
 
@@ -32,6 +34,8 @@ criterion = nn.BCELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 # Training loop
+losses = []
+accuracies = []
 for epoch in range(1, 301):
     predictions = model(X)
     loss = criterion(predictions, y)
@@ -40,16 +44,25 @@ for epoch in range(1, 301):
     loss.backward()
     optimizer.step()
 
+    accuracy = ((predictions >= 0.5).float() == y).float().mean().item()
+    losses.append(loss.item())
+    accuracies.append(accuracy)
+
     if epoch % 30 == 0:
-        accuracy = ((predictions >= 0.5).float() == y).float().mean()
-        print(f"Epoch {epoch:3d} | Loss: {loss.item():.4f} | Accuracy: {accuracy.item():.2%}")
+        print(f"Epoch {epoch:3d} | Loss: {loss.item():.4f} | Accuracy: {accuracy:.2%}")
 
 # Model summary
 total_params = sum(p.numel() for p in model.parameters())
 print(f"\nTotal parameters: {total_params}")
+layer_info = []
 for i, layer in enumerate(model):
     if hasattr(layer, "weight"):
-        print(f"  {layer} -> {layer.weight.numel() + layer.bias.numel()} params")
+        params = layer.weight.numel() + layer.bias.numel()
+        print(f"  {layer} -> {params} params")
+        layer_info.append({
+            "name": str(layer),
+            "params": params,
+        })
 
 # Sample predictions at different radii
 print("\nSample predictions (distance from origin):")
@@ -60,3 +73,43 @@ for point, prob in zip(samples, probs):
     r = point.norm().item()
     label = 1 if prob >= 0.5 else 0
     print(f"  r={r:.1f} -> p={prob:.4f} -> class {label}")
+
+# Decision grid for heatmap
+grid_size = 100
+gx = torch.linspace(-4, 4, grid_size)
+gy = torch.linspace(-4, 4, grid_size)
+xx, yy = torch.meshgrid(gx, gy, indexing="xy")
+grid = torch.stack([xx.reshape(-1), yy.reshape(-1)], dim=1)
+with torch.no_grad():
+    probs_grid = model(grid).squeeze().reshape(grid_size, grid_size)
+
+# Write JSON for web dashboard
+os.makedirs("data", exist_ok=True)
+data = {
+    "dataset": {
+        "x1": X[:, 0].tolist(),
+        "x2": X[:, 1].tolist(),
+        "labels": y.squeeze().tolist(),
+    },
+    "training": {
+        "epochs": list(range(1, 301)),
+        "losses": losses,
+        "accuracies": accuracies,
+    },
+    "architecture": {
+        "layers": layer_info,
+        "total_params": total_params,
+    },
+    "decision_grid": {
+        "x_range": gx.tolist(),
+        "y_range": gy.tolist(),
+        "probabilities": probs_grid.tolist(),
+    },
+    "predictions": [
+        {"point": s.tolist(), "radius": s.norm().item(), "prob": p.item(), "label": int(p >= 0.5)}
+        for s, p in zip(samples, probs)
+    ],
+}
+with open("data/mlp.json", "w") as f:
+    json.dump(data, f)
+print("\nWrote data/mlp.json")
