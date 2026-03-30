@@ -6,7 +6,7 @@ import webbrowser
 from http.server import SimpleHTTPRequestHandler
 from socketserver import TCPServer
 
-scripts = ["linear_regression.py", "logistic_regression.py", "mlp.py"]
+scripts = ["linear_regression.py", "logistic_regression.py", "mlp.py", "mnist.py"]
 
 os.makedirs("data", exist_ok=True)
 

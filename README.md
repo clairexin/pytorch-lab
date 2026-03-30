@@ -11,7 +11,7 @@ source venv/bin/activate
 python run_all.py
 ```
 
-This trains all three models, writes results to `data/`, starts a local server on port 8000, and opens the dashboard in your browser.
+This trains all four models, writes results to `data/`, starts a local server on port 8000, and opens the dashboard in your browser.
 
 ### Linear Regression
 
@@ -31,12 +31,18 @@ Classifies concentric circles — a non-linearly separable problem that a single
 
 ![MLP](docs/mlp.png)
 
+### MNIST Classifier (CNN)
+
+Classifies handwritten digits (0-9) from the MNIST dataset using a convolutional neural network. Introduces `torchvision`, `DataLoader`, convolutional layers, and multi-class classification with 10 output classes. Achieves ~99% test accuracy.
+
+![MNIST](docs/mnist.png)
+
 ## Setup
 
 ```bash
 python -m venv venv
 source venv/bin/activate
-pip install torch
+pip install torch torchvision
 ```
 
 ## Usage
@@ -47,6 +53,7 @@ Run individual exercises:
 python linear_regression.py
 python logistic_regression.py
 python mlp.py
+python mnist.py
 ```
 
 Or run everything and launch the dashboard:
