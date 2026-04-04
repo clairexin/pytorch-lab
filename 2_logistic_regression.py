@@ -99,6 +99,6 @@ data = {
         for s, p in zip(samples, probs)
     ],
 }
-with open("data/logistic_regression.json", "w") as f:
+with open("data/2_logistic_regression.json", "w") as f:
     json.dump(data, f)
-print("\nWrote data/logistic_regression.json")
+print("\nWrote data/2_logistic_regression.json")

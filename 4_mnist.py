@@ -128,6 +128,6 @@ data = {
     },
     "sample_predictions": sample_predictions,
 }
-with open("data/mnist.json", "w") as f:
+with open("data/4_mnist.json", "w") as f:
     json.dump(data, f)
-print("\nWrote data/mnist.json")
+print("\nWrote data/4_mnist.json")

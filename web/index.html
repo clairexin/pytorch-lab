@@ -26,6 +26,7 @@
             margin-bottom: 32px;
             border: 1px solid #0f3460;
         }
+        .section.hidden { display: none; }
         .section h2 {
             font-size: 1.3rem;
             margin-bottom: 16px;
@@ -64,23 +65,40 @@
         .info-box .value { color: #53d8fb; }
         .loading { text-align: center; padding: 40px; color: #888; }
         .error { text-align: center; padding: 40px; color: #e94560; }
+        .empty-state {
+            text-align: center;
+            padding: 80px 24px;
+            color: #888;
+            font-size: 1.1rem;
+        }
+        .empty-state code {
+            background: #16213e;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #53d8fb;
+        }
     </style>
 </head>
 <body>
     <h1>PyTorch Lab Dashboard</h1>
-    <div id="linear-section" class="section">
+    <div id="empty-state" class="empty-state hidden">
+        No lab data found. Run labs first:<br><br>
+        <code>python run_all.py</code> (all labs)<br>
+        <code>python run_all.py 1-linear 3-mlp</code> (specific labs)
+    </div>
+    <div id="linear-section" class="section hidden">
         <h2>1. Linear Regression</h2>
         <div class="loading">Loading...</div>
     </div>
-    <div id="logistic-section" class="section">
+    <div id="logistic-section" class="section hidden">
         <h2>2. Logistic Regression</h2>
         <div class="loading">Loading...</div>
     </div>
-    <div id="mlp-section" class="section">
+    <div id="mlp-section" class="section hidden">
         <h2>3. Multi-Layer Perceptron</h2>
         <div class="loading">Loading...</div>
     </div>
-    <div id="mnist-section" class="section">
+    <div id="mnist-section" class="section hidden">
         <h2>4. MNIST Classifier</h2>
         <div class="loading">Loading...</div>
     </div>
@@ -105,10 +123,14 @@
 
     const plotConfig = { responsive: true, displaylogo: false };
 
-    async function loadJSON(path) {
+    async function tryLoadJSON(path) {
         const resp = await fetch(path);
-        if (!resp.ok) throw new Error(`Failed to load ${path}: ${resp.status}`);
+        if (!resp.ok) return null;
         return resp.json();
+    }
+
+    function showSection(sectionId) {
+        document.getElementById(sectionId).classList.remove('hidden');
     }
 
     function showError(sectionId, heading, err) {
@@ -118,8 +140,10 @@
 
     // --- Linear Regression ---
     async function renderLinear() {
+        const d = await tryLoadJSON('../data/1_linear_regression.json');
+        if (!d) return false;
+        showSection('linear-section');
         try {
-            const d = await loadJSON('../data/linear_regression.json');
             const section = document.getElementById('linear-section');
             section.innerHTML = `<h2>1. Linear Regression</h2>
                 <div class="row">
@@ -150,12 +174,15 @@
         } catch (err) {
             showError('linear-section', '1. Linear Regression', err);
         }
+        return true;
     }
 
     // --- Logistic Regression ---
     async function renderLogistic() {
+        const d = await tryLoadJSON('../data/2_logistic_regression.json');
+        if (!d) return false;
+        showSection('logistic-section');
         try {
-            const d = await loadJSON('../data/logistic_regression.json');
             const section = document.getElementById('logistic-section');
             section.innerHTML = `<h2>2. Logistic Regression</h2>
                 <div class="row">
@@ -209,12 +236,15 @@
         } catch (err) {
             showError('logistic-section', '2. Logistic Regression', err);
         }
+        return true;
     }
 
     // --- MLP ---
     async function renderMLP() {
+        const d = await tryLoadJSON('../data/3_mlp.json');
+        if (!d) return false;
+        showSection('mlp-section');
         try {
-            const d = await loadJSON('../data/mlp.json');
             const section = document.getElementById('mlp-section');
             section.innerHTML = `<h2>3. Multi-Layer Perceptron</h2>
                 <div class="row">
@@ -270,12 +300,15 @@
         } catch (err) {
             showError('mlp-section', '3. Multi-Layer Perceptron', err);
         }
+        return true;
     }
 
     // --- MNIST Classifier ---
     async function renderMNIST() {
+        const d = await tryLoadJSON('../data/4_mnist.json');
+        if (!d) return false;
+        showSection('mnist-section');
         try {
-            const d = await loadJSON('../data/mnist.json');
             const section = document.getElementById('mnist-section');
             section.innerHTML = `<h2>4. MNIST Classifier</h2>
                 <div class="row">
@@ -364,9 +397,15 @@
         } catch (err) {
             showError('mnist-section', '4. MNIST Classifier', err);
         }
+        return true;
     }
 
-    Promise.all([renderLinear(), renderLogistic(), renderMLP(), renderMNIST()]);
+    // Render all available labs, show empty state if none have data
+    Promise.all([renderLinear(), renderLogistic(), renderMLP(), renderMNIST()]).then(results => {
+        if (!results.some(Boolean)) {
+            document.getElementById('empty-state').classList.remove('hidden');
+        }
+    });
     </script>
 </body>
 </html>

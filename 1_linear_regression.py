@@ -65,6 +65,6 @@ data = {
         "y_expected": 11.0,
     },
 }
-with open("data/linear_regression.json", "w") as f:
+with open("data/1_linear_regression.json", "w") as f:
     json.dump(data, f)
-print("\nWrote data/linear_regression.json")
+print("\nWrote data/1_linear_regression.json")

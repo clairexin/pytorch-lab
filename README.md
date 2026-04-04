@@ -4,14 +4,16 @@ A collection of hands-on PyTorch exercises exploring core machine learning conce
 
 ## Dashboard
 
-Run all exercises and launch the interactive dashboard in one command:
+Run all exercises and launch the interactive dashboard:
 
 ```bash
 source venv/bin/activate
-python run_all.py
+python run_all.py              # run all labs
+python run_all.py 1-linear     # run a single lab
+python run_all.py 1-linear 3-mlp  # run specific labs
 ```
 
-This trains all four models, writes results to `data/`, starts a local server on port 8000, and opens the dashboard in your browser.
+This trains the selected models, writes results to `data/`, starts a local server on port 8000, and opens the dashboard in your browser. The dashboard only shows sections for labs that have data.
 
 ### Linear Regression
 
@@ -47,19 +49,21 @@ pip install torch torchvision
 
 ## Usage
 
-Run individual exercises:
+Run individual exercises directly:
 
 ```bash
-python linear_regression.py
-python logistic_regression.py
-python mlp.py
-python mnist.py
+python 1_linear_regression.py
+python 2_logistic_regression.py
+python 3_mlp.py
+python 4_mnist.py
 ```
 
-Or run everything and launch the dashboard:
+Or use the runner to select labs and launch the dashboard:
 
 ```bash
-python run_all.py
+python run_all.py                      # all labs
+python run_all.py 2-logistic 4-mnist   # specific labs
+python run_all.py 1-linear --no-server # run without launching dashboard
 ```
 
 The dashboard is interactive — charts are zoomable and hoverable via Plotly.js.

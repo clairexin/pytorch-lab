@@ -110,6 +110,6 @@ data = {
         for s, p in zip(samples, probs)
     ],
 }
-with open("data/mlp.json", "w") as f:
+with open("data/3_mlp.json", "w") as f:
     json.dump(data, f)
-print("\nWrote data/mlp.json")
+print("\nWrote data/3_mlp.json")
